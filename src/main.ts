@@ -9,8 +9,14 @@ async function bootstrap() {
   const frontendUrls = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map((url) => url.trim()).filter(Boolean)
     : ['http://localhost:5173'];
+  
+  // En desarrollo, permitir todos los orígenes
+  const corsOrigin = process.env.NODE_ENV === 'production' 
+    ? (frontendUrls.length > 0 ? frontendUrls : true)
+    : true;
+  
   app.enableCors({
-    origin: frontendUrls.length > 0 ? frontendUrls : true,
+    origin: corsOrigin,
     credentials: true,
   });
 
