@@ -1,0 +1,70 @@
+name: Control de Servicio Render por Horario
+
+# Este workflow controla automáticamente el encendido y apagado del servicio en Render
+# según horarios específicos de Ecuador (UTC-5)
+
+on:
+  # Programación automática usando cron (horarios en UTC)
+  schedule:
+    # Apagar servicio a las 23:00 hora Ecuador (04:00 UTC del día siguiente)
+    - cron: "0 4 * * *"
+    # Encender servicio a las 07:00 hora Ecuador (12:00 UTC)
+    - cron: "0 12 * * *"
+  
+  # Permite ejecutar el workflow manualmente desde GitHub Actions
+  # Útil para pruebas y control manual
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Acción a realizar'
+        required: true
+        type: choice
+        options:
+          - suspend
+          - resume
+
+jobs:
+  control-render:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Paso 1: Apagar el servicio (solo cuando se ejecuta por el cron de las 04:00 UTC)
+      - name: Apagar servicio Render
+        if: github.event.schedule == '0 4 * * *'
+        run: |
+          echo "🌙 Apagando servicio a las 23:00 hora Ecuador (04:00 UTC)"
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json"
+          echo "✅ Servicio apagado exitosamente"
+
+      # Paso 2: Encender el servicio (solo cuando se ejecuta por el cron de las 12:00 UTC)
+      - name: Encender servicio Render
+        if: github.event.schedule == '0 12 * * *'
+        run: |
+          echo "☀️ Encendiendo servicio a las 07:00 hora Ecuador (12:00 UTC)"
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json"
+          echo "✅ Servicio encendido exitosamente"
+
+      # Paso 3: Ejecución manual (cuando se usa workflow_dispatch)
+      - name: Ejecutar acción manual
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ACTION="${{ github.event.inputs.action }}"
+          echo "🔧 Ejecutando acción manual: $ACTION"
+          
+          if [ "$ACTION" == "suspend" ]; then
+            echo "🌙 Apagando servicio manualmente..."
+            curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              -H "Accept: application/json"
+            echo "✅ Servicio apagado"
+          elif [ "$ACTION" == "resume" ]; then
+            echo "☀️ Encendiendo servicio manualmente..."
+            curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              -H "Accept: application/json"
+            echo "✅ Servicio encendido"
+          fi
