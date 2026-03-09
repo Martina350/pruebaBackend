@@ -6,10 +6,10 @@ name: Control de Servicio Render por Horario
 on:
   # Programación automática usando cron (horarios en UTC)
   schedule:
-    # Apagar servicio a las 23:00 hora Ecuador (04:00 UTC del día siguiente)
-    - cron: "0 4 * * *"
-    # Encender servicio a las 07:00 hora Ecuador (12:00 UTC)
-    - cron: "0 12 * * *"
+    # Apagar servicio a las 4:20 PM hora Ecuador (21:20 UTC)
+    - cron: "20 21 * * *"
+    # Encender servicio a las 4:25 PM hora Ecuador (21:25 UTC)
+    - cron: "25 21 * * *"
   
   # Permite ejecutar el workflow manualmente desde GitHub Actions
   # Útil para pruebas y control manual
@@ -28,21 +28,21 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # Paso 1: Apagar el servicio (solo cuando se ejecuta por el cron de las 04:00 UTC)
+      # Paso 1: Apagar el servicio (solo cuando se ejecuta por el cron de las 21:20 UTC)
       - name: Apagar servicio Render
-        if: github.event.schedule == '0 4 * * *'
+        if: github.event.schedule == '20 21 * * *'
         run: |
-          echo "🌙 Apagando servicio a las 23:00 hora Ecuador (04:00 UTC)"
+          echo "🌙 Apagando servicio a las 4:20 PM hora Ecuador (21:20 UTC)"
           curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Accept: application/json"
           echo "✅ Servicio apagado exitosamente"
 
-      # Paso 2: Encender el servicio (solo cuando se ejecuta por el cron de las 12:00 UTC)
+      # Paso 2: Encender el servicio (solo cuando se ejecuta por el cron de las 21:25 UTC)
       - name: Encender servicio Render
-        if: github.event.schedule == '0 12 * * *'
+        if: github.event.schedule == '25 21 * * *'
         run: |
-          echo "☀️ Encendiendo servicio a las 07:00 hora Ecuador (12:00 UTC)"
+          echo "☀️ Encendiendo servicio a las 4:25 PM hora Ecuador (21:25 UTC)"
           curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Accept: application/json"
