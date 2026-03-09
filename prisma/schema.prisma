@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Event {
+  id        String     @id @default(uuid())
+  name      String
+  date      DateTime
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  timeSlots TimeSlot[]
+
+  @@map("events")
+}
+
+model TimeSlot {
+  id           String        @id @default(uuid())
+  eventId      String        @map("event_id")
+  timeStart    String        @map("time_start")
+  timeEnd      String        @map("time_end")
+  capacity     Int
+  available    Int
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  reservations Reservation[]
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("time_slots")
+}
+
+model School {
+  id           String        @id @default(uuid())
+  amie         String        @unique
+  name         String
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  canton       String?
+  parroquia    String?
+  provincia    String?
+  reservations Reservation[]
+
+  @@index([amie])
+  @@map("schools")
+}
+
+model Reservation {
+  id                  String    @id @default(uuid())
+  amie                String
+  schoolName          String    @map("school_name")
+  coordinatorName     String    @map("coordinator_name")
+  coordinatorLastName String?   @map("coordinator_last_name")
+  email               String
+  whatsapp            String
+  students            Int
+  dayId               String    @map("day_id")
+  slotId              String    @map("slot_id")
+  status              String    @default("pendiente")
+  timestamp           DateTime  @default(now())
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  schoolId            String?   @map("school_id")
+  confirmationToken   String?   @unique @map("confirmation_token")
+  confirmedAt         DateTime? @map("confirmed_at")
+  school              School?   @relation(fields: [schoolId], references: [id])
+  slot                TimeSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@index([amie])
+  @@index([slotId])
+  @@index([dayId])
+  @@index([email])
+  @@index([schoolId])
+  @@index([confirmationToken])
+  @@map("reservations")
+}
