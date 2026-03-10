@@ -2,8 +2,8 @@ name: Suspender Servicio Render
 
 on:
   schedule:
-    # Apagar servicio a las 12:15 PM hora Ecuador (17:15 UTC)
-    - cron: "15 17 * * *"
+    # Apagar servicio a las 12:35 PM hora Ecuador (17:35 UTC)
+    - cron: "35 17 * * *"
   # Trigger manual para pruebas (eliminar después de la primera ejecución)
   workflow_dispatch:
 
@@ -30,7 +30,8 @@ jobs:
         run: |
           echo "🌙 Iniciando suspensión del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 12:15 PM"
+          echo "📍 Horario Ecuador: 12:35 PM"
+          echo "🔑 Service ID: ${{ secrets.RENDER_SERVICE_ID }}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
@@ -41,12 +42,12 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
           
           echo "📊 Código HTTP: $HTTP_CODE"
+          echo "📄 Respuesta completa: $BODY"
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
             echo "✅ Servicio suspendido exitosamente"
           else
             echo "❌ Error al suspender el servicio"
-            echo "📄 Respuesta: $BODY"
             exit 1
           fi
 
