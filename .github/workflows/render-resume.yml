@@ -2,8 +2,8 @@ name: Reanudar Servicio Render
 
 on:
   schedule:
-    # Encender servicio a las 12:40 PM hora Ecuador (17:40 UTC)
-    - cron: "40 17 * * *"
+    # Encender servicio a las 1:00 PM hora Ecuador (18:00 UTC)
+    - cron: "0 18 * * *"
   # Trigger manual para pruebas (eliminar después de la primera ejecución)
   workflow_dispatch:
 
@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "☀️ Iniciando reanudación del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 12:40 PM"
+          echo "📍 Horario Ecuador: 1:00 PM"
           echo "🔑 Service ID: ${{ secrets.RENDER_SERVICE_ID }}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -46,12 +46,28 @@ jobs:
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
             echo "✅ Servicio reanudado exitosamente"
-            echo "🔄 Esperando que el servicio esté completamente activo..."
+            echo "⏳ Esperando 10 segundos para que el servicio esté completamente activo..."
             sleep 10
-            echo "✅ Servicio debería estar activo ahora"
           else
             echo "❌ Error al reanudar el servicio"
             exit 1
+          fi
+
+      - name: Verificar estado del servicio
+        run: |
+          echo "🔍 Verificando estado del servicio..."
+          
+          STATUS_RESPONSE=$(curl -s \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json")
+          
+          echo "📄 Estado del servicio: $STATUS_RESPONSE"
+          
+          # Intentar extraer el estado si la respuesta es JSON
+          if command -v jq &> /dev/null; then
+            SERVICE_STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.suspended // "unknown"')
+            echo "🔍 Suspended: $SERVICE_STATUS"
           fi
 
       - name: Registro de reanudación
