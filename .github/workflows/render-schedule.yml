@@ -5,20 +5,40 @@ name: Control Automático de Servicio Render
 
 on:
   schedule:
-    # Apagar servicio a las 11:15 AM hora Ecuador (16:15 UTC)
-    - cron: "15 16 * * *"
-    # Encender servicio a las 11:20 AM hora Ecuador (16:20 UTC)
-    - cron: "20 16 * * *"
+    # Apagar servicio a las 11:25 AM hora Ecuador (16:25 UTC)
+    - cron: "25 16 * * *"
+    # Encender servicio a las 11:30 AM hora Ecuador (16:30 UTC)
+    - cron: "30 16 * * *"
 
 jobs:
-  suspend-service:
-    name: Suspender Servicio Render
+  control-service:
+    name: Control de Servicio Render
     runs-on: ubuntu-latest
-    # Solo ejecutar cuando el schedule es a las 16:15 UTC
-    if: github.event.schedule == '15 16 * * *'
     
     steps:
+      - name: Determinar acción según la hora
+        id: determine-action
+        run: |
+          CURRENT_MINUTE=$(date -u +%M)
+          CURRENT_HOUR=$(date -u +%H)
+          
+          echo "⏰ Hora actual UTC: $CURRENT_HOUR:$CURRENT_MINUTE"
+          
+          # Determinar si es hora de suspender (16:25 UTC)
+          if [ "$CURRENT_HOUR" -eq 16 ] && [ "$CURRENT_MINUTE" -ge 25 ] && [ "$CURRENT_MINUTE" -lt 30 ]; then
+            echo "action=suspend" >> $GITHUB_OUTPUT
+            echo "🌙 Acción determinada: SUSPEND"
+          # Determinar si es hora de reanudar (16:30 UTC)
+          elif [ "$CURRENT_HOUR" -eq 16 ] && [ "$CURRENT_MINUTE" -ge 30 ]; then
+            echo "action=resume" >> $GITHUB_OUTPUT
+            echo "☀️ Acción determinada: RESUME"
+          else
+            echo "action=none" >> $GITHUB_OUTPUT
+            echo "⚠️ No se ejecutará ninguna acción en este horario"
+          fi
+
       - name: Validar configuración
+        if: steps.determine-action.outputs.action != 'none'
         run: |
           echo "🔍 Validando variables de entorno..."
           if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
@@ -32,10 +52,11 @@ jobs:
           echo "✅ Variables configuradas correctamente"
 
       - name: Suspender servicio en Render
+        if: steps.determine-action.outputs.action == 'suspend'
         run: |
           echo "🌙 Iniciando suspensión del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 11:15 AM"
+          echo "📍 Horario Ecuador: 11:25 AM"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
@@ -55,38 +76,12 @@ jobs:
             exit 1
           fi
 
-      - name: Registro de suspensión
-        run: |
-          echo "📝 Resumen de la operación:"
-          echo "   - Acción: SUSPEND"
-          echo "   - Estado: COMPLETADO"
-          echo "   - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-
-  resume-service:
-    name: Reanudar Servicio Render
-    runs-on: ubuntu-latest
-    # Solo ejecutar cuando el schedule es a las 16:20 UTC
-    if: github.event.schedule == '20 16 * * *'
-    
-    steps:
-      - name: Validar configuración
-        run: |
-          echo "🔍 Validando variables de entorno..."
-          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
-            echo "❌ ERROR: RENDER_SERVICE_ID no está configurado"
-            exit 1
-          fi
-          if [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
-            echo "❌ ERROR: RENDER_API_KEY no está configurado"
-            exit 1
-          fi
-          echo "✅ Variables configuradas correctamente"
-
       - name: Reanudar servicio en Render
+        if: steps.determine-action.outputs.action == 'resume'
         run: |
           echo "☀️ Iniciando reanudación del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 11:20 AM"
+          echo "📍 Horario Ecuador: 11:30 AM"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
@@ -99,6 +94,9 @@ jobs:
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
             echo "✅ Servicio reanudado exitosamente"
             echo "📊 Código HTTP: $HTTP_CODE"
+            echo "🔄 Esperando que el servicio esté completamente activo..."
+            sleep 10
+            echo "✅ Servicio debería estar activo ahora"
           else
             echo "❌ Error al reanudar el servicio"
             echo "📊 Código HTTP: $HTTP_CODE"
@@ -106,16 +104,14 @@ jobs:
             exit 1
           fi
 
-      - name: Verificar estado del servicio
+      - name: Registro de operación
+        if: steps.determine-action.outputs.action != 'none'
         run: |
-          echo "🔄 Esperando que el servicio esté completamente activo..."
-          sleep 10
-          echo "✅ Servicio debería estar activo ahora"
-
-      - name: Registro de reanudación
-        run: |
-          echo "📝 Resumen de la operación:"
-          echo "   - Acción: RESUME"
+          ACTION="${{ steps.determine-action.outputs.action }}"
+          echo "� Resumen de la operación:"
+          echo "   - Acción: $ACTION"
           echo "   - Estado: COMPLETADO"
           echo "   - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "🎉 Ciclo de suspensión/reanudación completado"
+          if [ "$ACTION" == "resume" ]; then
+            echo "🎉 Ciclo de suspensión/reanudación completado"
+          fi
