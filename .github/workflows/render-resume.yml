@@ -2,8 +2,8 @@ name: Reanudar Servicio Render
 
 on:
   schedule:
-    # Encender servicio a las 2:30 PM hora Ecuador (19:30 UTC)
-    - cron: "30 19 * * *"
+    # Encender servicio a las 7:00 AM hora Ecuador (12:00 UTC)
+    - cron: "0 12 * * *"
   # Trigger manual para pruebas
   workflow_dispatch:
 
@@ -15,15 +15,15 @@ jobs:
     steps:
       - name: Esperar hasta el horario programado
         run: |
-          TARGET_HOUR=19
-          TARGET_MINUTE=30
+          TARGET_HOUR=12
+          TARGET_MINUTE=0
           
           while true; do
             CURRENT_HOUR=$(date -u +%H)
             CURRENT_MINUTE=$(date -u +%M)
             
             echo "⏰ Hora actual: $CURRENT_HOUR:$CURRENT_MINUTE UTC ($(date -u '+%Y-%m-%d %H:%M:%S'))"
-            echo "🎯 Hora objetivo: $TARGET_HOUR:$TARGET_MINUTE UTC (2:30 PM Ecuador)"
+            echo "🎯 Hora objetivo: $TARGET_HOUR:$TARGET_MINUTE UTC (7:00 AM Ecuador)"
             
             # Verificar si ya llegó la hora
             if [ "$CURRENT_HOUR" -eq "$TARGET_HOUR" ] && [ "$CURRENT_MINUTE" -ge "$TARGET_MINUTE" ]; then
@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "☀️ Iniciando reanudación del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 2:30 PM"
+          echo "📍 Horario Ecuador: 7:00 AM"
           echo "🔑 Service ID: ${{ secrets.RENDER_SERVICE_ID }}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \

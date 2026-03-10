@@ -2,8 +2,8 @@ name: Suspender Servicio Render
 
 on:
   schedule:
-    # Apagar servicio a las 2:25 PM hora Ecuador (19:25 UTC)
-    - cron: "25 19 * * *"
+    # Apagar servicio a las 11:00 PM hora Ecuador (04:00 UTC del día siguiente)
+    - cron: "0 4 * * *"
   # Trigger manual para pruebas
   workflow_dispatch:
 
@@ -15,15 +15,15 @@ jobs:
     steps:
       - name: Esperar hasta el horario programado
         run: |
-          TARGET_HOUR=19
-          TARGET_MINUTE=25
+          TARGET_HOUR=4
+          TARGET_MINUTE=0
           
           while true; do
             CURRENT_HOUR=$(date -u +%H)
             CURRENT_MINUTE=$(date -u +%M)
             
             echo "⏰ Hora actual: $CURRENT_HOUR:$CURRENT_MINUTE UTC ($(date -u '+%Y-%m-%d %H:%M:%S'))"
-            echo "🎯 Hora objetivo: $TARGET_HOUR:$TARGET_MINUTE UTC (2:25 PM Ecuador)"
+            echo "🎯 Hora objetivo: $TARGET_HOUR:$TARGET_MINUTE UTC (11:00 PM Ecuador)"
             
             # Verificar si ya llegó la hora
             if [ "$CURRENT_HOUR" -eq "$TARGET_HOUR" ] && [ "$CURRENT_MINUTE" -ge "$TARGET_MINUTE" ]; then
@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "🌙 Iniciando suspensión del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 2:25 PM"
+          echo "📍 Horario Ecuador: 11:00 PM"
           echo "🔑 Service ID: ${{ secrets.RENDER_SERVICE_ID }}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
