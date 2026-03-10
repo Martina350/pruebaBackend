@@ -5,17 +5,17 @@ name: Control Automático de Servicio Render
 
 on:
   schedule:
-    # Apagar servicio a las 9:45 AM hora Ecuador (14:45 UTC)
-    - cron: "45 14 * * *"
-    # Encender servicio a las 9:50 AM hora Ecuador (14:50 UTC)
-    - cron: "50 14 * * *"
+    # Apagar servicio a las 11:15 AM hora Ecuador (16:15 UTC)
+    - cron: "15 16 * * *"
+    # Encender servicio a las 11:20 AM hora Ecuador (16:20 UTC)
+    - cron: "20 16 * * *"
 
 jobs:
   suspend-service:
     name: Suspender Servicio Render
     runs-on: ubuntu-latest
-    # Solo ejecutar cuando el schedule es a las 14:45 UTC
-    if: github.event.schedule == '45 14 * * *'
+    # Solo ejecutar cuando el schedule es a las 16:15 UTC
+    if: github.event.schedule == '15 16 * * *'
     
     steps:
       - name: Validar configuración
@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "🌙 Iniciando suspensión del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 9:45 AM"
+          echo "📍 Horario Ecuador: 11:15 AM"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
@@ -65,8 +65,8 @@ jobs:
   resume-service:
     name: Reanudar Servicio Render
     runs-on: ubuntu-latest
-    # Solo ejecutar cuando el schedule es a las 14:50 UTC
-    if: github.event.schedule == '50 14 * * *'
+    # Solo ejecutar cuando el schedule es a las 16:20 UTC
+    if: github.event.schedule == '20 16 * * *'
     
     steps:
       - name: Validar configuración
@@ -86,7 +86,7 @@ jobs:
         run: |
           echo "☀️ Iniciando reanudación del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 9:50 AM"
+          echo "📍 Horario Ecuador: 11:20 AM"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
