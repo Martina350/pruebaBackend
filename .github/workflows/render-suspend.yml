@@ -1,0 +1,56 @@
+name: Suspender Servicio Render
+
+on:
+  schedule:
+    # Apagar servicio a las 11:25 AM hora Ecuador (16:25 UTC)
+    - cron: "25 16 * * *"
+
+jobs:
+  suspend-service:
+    name: Suspender Servicio Render
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validar configuración
+        run: |
+          echo "🔍 Validando variables de entorno..."
+          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
+            echo "❌ ERROR: RENDER_SERVICE_ID no está configurado"
+            exit 1
+          fi
+          if [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
+            echo "❌ ERROR: RENDER_API_KEY no está configurado"
+            exit 1
+          fi
+          echo "✅ Variables configuradas correctamente"
+
+      - name: Suspender servicio en Render
+        run: |
+          echo "🌙 Iniciando suspensión del servicio..."
+          echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "📍 Horario Ecuador: 11:25 AM"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "📊 Código HTTP: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            echo "✅ Servicio suspendido exitosamente"
+          else
+            echo "❌ Error al suspender el servicio"
+            echo "📄 Respuesta: $BODY"
+            exit 1
+          fi
+
+      - name: Registro de suspensión
+        run: |
+          echo "📝 Resumen de la operación:"
+          echo "   - Acción: SUSPEND"
+          echo "   - Estado: COMPLETADO"
+          echo "   - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"

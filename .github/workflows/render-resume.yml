@@ -1,0 +1,60 @@
+name: Reanudar Servicio Render
+
+on:
+  schedule:
+    # Encender servicio a las 11:30 AM hora Ecuador (16:30 UTC)
+    - cron: "30 16 * * *"
+
+jobs:
+  resume-service:
+    name: Reanudar Servicio Render
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validar configuración
+        run: |
+          echo "🔍 Validando variables de entorno..."
+          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
+            echo "❌ ERROR: RENDER_SERVICE_ID no está configurado"
+            exit 1
+          fi
+          if [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
+            echo "❌ ERROR: RENDER_API_KEY no está configurado"
+            exit 1
+          fi
+          echo "✅ Variables configuradas correctamente"
+
+      - name: Reanudar servicio en Render
+        run: |
+          echo "☀️ Iniciando reanudación del servicio..."
+          echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "📍 Horario Ecuador: 11:30 AM"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "📊 Código HTTP: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            echo "✅ Servicio reanudado exitosamente"
+            echo "🔄 Esperando que el servicio esté completamente activo..."
+            sleep 10
+            echo "✅ Servicio debería estar activo ahora"
+          else
+            echo "❌ Error al reanudar el servicio"
+            echo "📄 Respuesta: $BODY"
+            exit 1
+          fi
+
+      - name: Registro de reanudación
+        run: |
+          echo "📝 Resumen de la operación:"
+          echo "   - Acción: RESUME"
+          echo "   - Estado: COMPLETADO"
+          echo "   - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "🎉 Servicio reanudado correctamente"
