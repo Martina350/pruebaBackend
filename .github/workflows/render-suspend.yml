@@ -2,8 +2,8 @@ name: Suspender Servicio Render
 
 on:
   schedule:
-    # Apagar servicio a las 11:33 AM hora Ecuador (16:33 UTC)
-    - cron: "33 16 * * *"
+    # Apagar servicio a las 11:40 AM hora Ecuador (16:40 UTC)
+    - cron: "40 16 * * *"
 
 jobs:
   suspend-service:
@@ -28,7 +28,7 @@ jobs:
         run: |
           echo "🌙 Iniciando suspensión del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 11:33 AM"
+          echo "📍 Horario Ecuador: 11:40 AM"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
