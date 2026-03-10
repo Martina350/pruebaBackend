@@ -2,9 +2,9 @@ name: Reanudar Servicio Render
 
 on:
   schedule:
-    # Encender servicio a las 1:15 PM hora Ecuador (18:15 UTC)
-    - cron: "15 18 * * *"
-  # Trigger manual para pruebas (eliminar después de la primera ejecución)
+    # Encender servicio a las 1:40 PM hora Ecuador (18:40 UTC)
+    - cron: "40 18 * * *"
+  # Trigger manual para pruebas
   workflow_dispatch:
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "☀️ Iniciando reanudación del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 1:15 PM"
+          echo "📍 Horario Ecuador: 1:40 PM"
           echo "🔑 Service ID: ${{ secrets.RENDER_SERVICE_ID }}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
