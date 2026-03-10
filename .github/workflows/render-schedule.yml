@@ -6,10 +6,10 @@ name: Control de Servicio Render por Horario
 on:
   # Programación automática usando cron (horarios en UTC)
   schedule:
-    # Apagar servicio a las 4:55 PM hora Ecuador (21:55 UTC)
-    - cron: "55 21 * * *"
-    # Encender servicio a las 5:00 PM hora Ecuador (22:00 UTC)
-    - cron: "0 22 * * *"
+    # Apagar servicio a las 8:40 AM hora Ecuador (13:40 UTC)
+    - cron: "40 13 * * *"
+    # Encender servicio a las 8:45 AM hora Ecuador (13:45 UTC)
+    - cron: "45 13 * * *"
   
   # Permite ejecutar el workflow manualmente desde GitHub Actions
   # Útil para pruebas y control manual
@@ -24,33 +24,38 @@ on:
           - resume
 
 jobs:
-  control-render:
+  suspend-service:
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '40 13 * * *'
     
     steps:
-      # Paso 1: Apagar el servicio (solo cuando se ejecuta por el cron de las 21:55 UTC)
       - name: Apagar servicio Render
-        if: github.event.schedule == '55 21 * * *'
         run: |
-          echo "🌙 Apagando servicio a las 4:55 PM hora Ecuador (21:55 UTC)"
+          echo "🌙 Apagando servicio a las 8:40 AM hora Ecuador (13:40 UTC)"
           curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Accept: application/json"
           echo "✅ Servicio apagado exitosamente"
 
-      # Paso 2: Encender el servicio (solo cuando se ejecuta por el cron de las 22:00 UTC)
+  resume-service:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '45 13 * * *'
+    
+    steps:
       - name: Encender servicio Render
-        if: github.event.schedule == '0 22 * * *'
         run: |
-          echo "☀️ Encendiendo servicio a las 5:00 PM hora Ecuador (22:00 UTC)"
+          echo "☀️ Encendiendo servicio a las 8:45 AM hora Ecuador (13:45 UTC)"
           curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Accept: application/json"
           echo "✅ Servicio encendido exitosamente"
 
-      # Paso 3: Ejecución manual (cuando se usa workflow_dispatch)
+  manual-control:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
       - name: Ejecutar acción manual
-        if: github.event_name == 'workflow_dispatch'
         run: |
           ACTION="${{ github.event.inputs.action }}"
           echo "🔧 Ejecutando acción manual: $ACTION"
