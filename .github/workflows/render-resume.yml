@@ -2,8 +2,8 @@ name: Reanudar Servicio Render
 
 on:
   schedule:
-    # Encender servicio a las 1:40 PM hora Ecuador (18:40 UTC)
-    - cron: "40 18 * * *"
+    # Encender servicio a las 2:30 PM hora Ecuador (19:30 UTC)
+    - cron: "30 19 * * *"
   # Trigger manual para pruebas
   workflow_dispatch:
 
@@ -13,6 +13,38 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Esperar hasta el horario programado
+        run: |
+          TARGET_HOUR=19
+          TARGET_MINUTE=30
+          
+          while true; do
+            CURRENT_HOUR=$(date -u +%H)
+            CURRENT_MINUTE=$(date -u +%M)
+            
+            echo "⏰ Hora actual: $CURRENT_HOUR:$CURRENT_MINUTE UTC ($(date -u '+%Y-%m-%d %H:%M:%S'))"
+            echo "🎯 Hora objetivo: $TARGET_HOUR:$TARGET_MINUTE UTC (2:30 PM Ecuador)"
+            
+            # Verificar si ya llegó la hora
+            if [ "$CURRENT_HOUR" -eq "$TARGET_HOUR" ] && [ "$CURRENT_MINUTE" -ge "$TARGET_MINUTE" ]; then
+              echo "✅ ¡Hora alcanzada! Procediendo a reanudar el servicio..."
+              break
+            fi
+            
+            # Calcular tiempo restante
+            CURRENT_TOTAL=$((CURRENT_HOUR * 60 + CURRENT_MINUTE))
+            TARGET_TOTAL=$((TARGET_HOUR * 60 + TARGET_MINUTE))
+            DIFF=$((TARGET_TOTAL - CURRENT_TOTAL))
+            
+            if [ $DIFF -lt 0 ]; then
+              DIFF=$((DIFF + 1440))  # Agregar 24 horas si es para el día siguiente
+            fi
+            
+            echo "⏳ Tiempo restante: $DIFF minutos"
+            echo "💤 Esperando 30 segundos antes de verificar nuevamente..."
+            sleep 30
+          done
+      
       - name: Validar configuración
         run: |
           echo "🔍 Validando variables de entorno..."
@@ -30,7 +62,7 @@ jobs:
         run: |
           echo "☀️ Iniciando reanudación del servicio..."
           echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 Horario Ecuador: 1:40 PM"
+          echo "📍 Horario Ecuador: 2:30 PM"
           echo "🔑 Service ID: ${{ secrets.RENDER_SERVICE_ID }}"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
