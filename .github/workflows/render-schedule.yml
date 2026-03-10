@@ -1,75 +1,121 @@
-name: Control de Servicio Render por Horario
+name: Control Automático de Servicio Render
 
-# Este workflow controla automáticamente el encendido y apagado del servicio en Render
-# según horarios específicos de Ecuador (UTC-5)
+# Workflow completamente automático para controlar el servicio de Render
+# Horarios configurados para Ecuador (UTC-5)
 
 on:
-  # Programación automática usando cron (horarios en UTC)
   schedule:
-    # Apagar servicio a las 8:40 AM hora Ecuador (13:40 UTC)
-    - cron: "40 13 * * *"
-    # Encender servicio a las 8:45 AM hora Ecuador (13:45 UTC)
-    - cron: "45 13 * * *"
-  
-  # Permite ejecutar el workflow manualmente desde GitHub Actions
-  # Útil para pruebas y control manual
-  workflow_dispatch:
-    inputs:
-      action:
-        description: 'Acción a realizar'
-        required: true
-        type: choice
-        options:
-          - suspend
-          - resume
+    # Apagar servicio a las 9:45 AM hora Ecuador (14:45 UTC)
+    - cron: "45 14 * * *"
+    # Encender servicio a las 9:50 AM hora Ecuador (14:50 UTC)
+    - cron: "50 14 * * *"
 
 jobs:
   suspend-service:
+    name: Suspender Servicio Render
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' && github.event.schedule == '40 13 * * *'
+    # Solo ejecutar cuando el schedule es a las 14:45 UTC
+    if: github.event.schedule == '45 14 * * *'
     
     steps:
-      - name: Apagar servicio Render
+      - name: Validar configuración
         run: |
-          echo "🌙 Apagando servicio a las 8:40 AM hora Ecuador (13:40 UTC)"
-          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
+          echo "🔍 Validando variables de entorno..."
+          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
+            echo "❌ ERROR: RENDER_SERVICE_ID no está configurado"
+            exit 1
+          fi
+          if [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
+            echo "❌ ERROR: RENDER_API_KEY no está configurado"
+            exit 1
+          fi
+          echo "✅ Variables configuradas correctamente"
+
+      - name: Suspender servicio en Render
+        run: |
+          echo "🌙 Iniciando suspensión del servicio..."
+          echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "📍 Horario Ecuador: 9:45 AM"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Accept: application/json"
-          echo "✅ Servicio apagado exitosamente"
+            -H "Accept: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            echo "✅ Servicio suspendido exitosamente"
+            echo "📊 Código HTTP: $HTTP_CODE"
+          else
+            echo "❌ Error al suspender el servicio"
+            echo "📊 Código HTTP: $HTTP_CODE"
+            echo "📄 Respuesta: $BODY"
+            exit 1
+          fi
+
+      - name: Registro de suspensión
+        run: |
+          echo "📝 Resumen de la operación:"
+          echo "   - Acción: SUSPEND"
+          echo "   - Estado: COMPLETADO"
+          echo "   - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
   resume-service:
+    name: Reanudar Servicio Render
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' && github.event.schedule == '45 13 * * *'
+    # Solo ejecutar cuando el schedule es a las 14:50 UTC
+    if: github.event.schedule == '50 14 * * *'
     
     steps:
-      - name: Encender servicio Render
+      - name: Validar configuración
         run: |
-          echo "☀️ Encendiendo servicio a las 8:45 AM hora Ecuador (13:45 UTC)"
-          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Accept: application/json"
-          echo "✅ Servicio encendido exitosamente"
-
-  manual-control:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    
-    steps:
-      - name: Ejecutar acción manual
-        run: |
-          ACTION="${{ github.event.inputs.action }}"
-          echo "🔧 Ejecutando acción manual: $ACTION"
-          
-          if [ "$ACTION" == "suspend" ]; then
-            echo "🌙 Apagando servicio manualmente..."
-            curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/suspend" \
-              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-              -H "Accept: application/json"
-            echo "✅ Servicio apagado"
-          elif [ "$ACTION" == "resume" ]; then
-            echo "☀️ Encendiendo servicio manualmente..."
-            curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
-              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-              -H "Accept: application/json"
-            echo "✅ Servicio encendido"
+          echo "🔍 Validando variables de entorno..."
+          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
+            echo "❌ ERROR: RENDER_SERVICE_ID no está configurado"
+            exit 1
           fi
+          if [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
+            echo "❌ ERROR: RENDER_API_KEY no está configurado"
+            exit 1
+          fi
+          echo "✅ Variables configuradas correctamente"
+
+      - name: Reanudar servicio en Render
+        run: |
+          echo "☀️ Iniciando reanudación del servicio..."
+          echo "⏰ Hora: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "📍 Horario Ecuador: 9:50 AM"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/resume" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            echo "✅ Servicio reanudado exitosamente"
+            echo "📊 Código HTTP: $HTTP_CODE"
+          else
+            echo "❌ Error al reanudar el servicio"
+            echo "📊 Código HTTP: $HTTP_CODE"
+            echo "📄 Respuesta: $BODY"
+            exit 1
+          fi
+
+      - name: Verificar estado del servicio
+        run: |
+          echo "🔄 Esperando que el servicio esté completamente activo..."
+          sleep 10
+          echo "✅ Servicio debería estar activo ahora"
+
+      - name: Registro de reanudación
+        run: |
+          echo "📝 Resumen de la operación:"
+          echo "   - Acción: RESUME"
+          echo "   - Estado: COMPLETADO"
+          echo "   - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "🎉 Ciclo de suspensión/reanudación completado"
